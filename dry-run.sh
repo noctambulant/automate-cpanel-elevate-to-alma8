@@ -62,7 +62,7 @@ fi
 stage_1()
 {
 #Adjusting CentOS repositories to use https://vault.centos.org:
-      echo -e "Removing System Repos due to EOL"
+    echo -e "Removing System Repos due to EOL"
     yum-config-manager --disable system-\*
 
 # Download and Setup the new CentOS Base Repo
