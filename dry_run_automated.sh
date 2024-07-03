@@ -1,5 +1,6 @@
 #!/bin/bash
 #Automating dry-run upgrade steps by Alex Silkin
+# Modified by Jesse Richardson (jesse.richardson@liquidweb.com)
 #6/13/24
 
 set -eu
@@ -16,9 +17,9 @@ print_usage()
   echo "Syntax: dry-run.sh [-s|--stage -h|--help]"
   echo "Options:"
   echo "-s|--stage        Re-run a specific stage of the dry-run script"
-  echo "-h|--help         Print this help message"  
+  echo "-h|--help         Print this help message"
 }
- 
+
 
 #Stage 0 is always executed firs as well as during every reboot.
 #It checks the last completed stage according to the $LOCK_FILE status and tries to proceed accordingly
@@ -26,7 +27,7 @@ print_usage()
 stage_0()
 {
 
-#Setup log-files 
+#Setup log-files
 touch $PRE_FLIGHT_LOG
 touch $LOCK_FILE
 touch $LOG
@@ -81,7 +82,7 @@ else
 fi
 }
 stage_1()
-{ 
+{
 #Disable Exim
     echo -e "Disabling Exim...\n"  2>&1 | tee -a $LOG
     whmapi1 configureservice service=exim enabled=0 monitored=0  2>&1 | tee -a $LOG
@@ -89,6 +90,15 @@ stage_1()
 #Re-create /boot/grub2/grub.cfg
     echo -e "Rebuilding /boot/grub2/grub.cfg\n"  2>&1 | tee -a $LOG
     grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1 | tee -a $LOG
+
+# Remove System Repos due to EOL
+    echo -e "Removing System Repos due to EOL"
+    yum-config-manager --disable system-\*
+
+# Download and Setup the new CentOS Base Repo
+    echo -e "Setting up Vaulted CentOS7 Repo"
+    wget -O /etc/yum.repos.d/CentOS-Base.repo https://files.liquidweb.com/support/elevate-scripts/CentOS-Base.repo
+    yum clean all && yum makecache
 
 #Re-install kernel files
     yum -y reinstall kernel kernel-devel kernel-headers kernel-tools kernel-tools-libs  2>&1 | tee -a $LOG
@@ -137,14 +147,14 @@ stage_2()
     echo "Yum updates completed, moving on to pre-flight checks" >> /etc/motd
     sleep 5 && echo "Stage 2 completed" > $LOCK_FILE
     reboot
-} 
+}
 
 stage_3()
 {
 #Running the LW upgrade pre-flight checks
     echo -e "Downloading and running LW and cPanel pre-flight checks:\n" 2>&1 | tee -a $LOG
     bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/elevate_preflight.sh) 2>&1 | tee -a $PRE_FLIGHT_LOG
-#Running cPanel preflight-checks: 
+#Running cPanel preflight-checks:
     wget -q -O /scripts/elevate-cpanel https://raw.githubusercontent.com/cpanel/elevate/release/elevate-cpanel >> $LOG
     chmod 700 /scripts/elevate-cpanel
     echo -e "Disabling /var/cpanel/elevate-noc-recommendations" 2>&1 | tee -a $LOG
@@ -168,7 +178,7 @@ if [[ "$(cat $LOCK_FILE)" == "Stage 3 completed" ]]
 then
  {
   echo "Installing Liquid Web post-leapp scripts..."
-  bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/install_post_leapp.sh) 
+  bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/install_post_leapp.sh)
  } >> $LOG
 
 echo "Stage 4 completed" > $LOCK_FILE; /scripts/elevate-cpanel --start --non-interactive --no-leapp
@@ -193,7 +203,7 @@ stage_5()
 if ! [[ "$(cat $LOCK_FILE)" == "Stage 4 completed" ]]
 then
   echo "Error: '/scripts/elevate-cpanel --start --non-interactive --no-leapp' has not run yet"
-  echo "Exiting..." 
+  echo "Exiting..."
   exit 1
 else
   echo "Beginnig Stage 5 of the dry-run test" 2>&1 | tee -a $LOG
@@ -245,7 +255,7 @@ while getopts ":hs:-:" opt; do
             0)
               echo Executing stage0
               stage_0
-              ;; 
+              ;;
             1)
               echo Executing stage1
               stage_1
