@@ -37,14 +37,9 @@ touch $EL8_PACKAGES
 if [[ ! -s ${LOCK_FILE} ]]
 then
 {
- #  bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/elevate_preflight.sh) 2>&1 | tee -a $LOG
-  # if [[ $(grep -q "cpanel.lisc missing" "$PRE_FLIGHT_LOG") ]]
-  # echo "ERROR: This staging server is missing the cPanel license" 2>&1 | tee -a $LOG
-  #  exit 1
-  # fi
-   echo "Starting a new dry-run test at $(date)"  2>&1 | tee -a $LOG
-   echo "$(date) Upgrade paths, lock-file, and log-file have been setup"  2>&1 | tee -a $LOG
-   echo "Proceeding with Stage 1"  2>&1 | tee -a $LOG
+  echo "Starting a new dry-run test at $(date)"  2>&1 | tee -a $LOG
+  echo "$(date) Upgrade paths, lock-file, and log-file have been setup"  2>&1 | tee -a $LOG
+  echo "Proceeding with Stage 1"  2>&1 | tee -a $LOG
   #Setting up cron-job so script can run after reboot.
   echo "@reboot /bin/bash /root/dry-run.sh" >> /var/spool/cron/root
   echo "Stage 0 completed" > $LOCK_FILE
@@ -130,7 +125,7 @@ stage_2()
     done
     echo -e "Removing LW-provided centos-release...\n" 2>&1 | tee -a $LOG
     rpm -e --nodeps centos-release
-     #Installing CentOS7-provided centos-release and updating packages
+#Installing CentOS7-provided centos-release and updating packages
     yum -y install http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-9.2009.0.el7.centos.x86_64.rpm 2>&1 | tee -a $LOG
     yum update -y 2>&1 | tee -a $LOG
 #Updating $LOCK_FILE and rebooting so script can move to stage_3, pre-flight checks
@@ -166,20 +161,17 @@ stage_4()
 
 if [[ "$(cat $LOCK_FILE)" == "Stage 3 completed" ]]
 then
- {
-  echo "Installing Liquid Web post-leapp scripts..."
-  bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/install_post_leapp.sh) 
- } >> $LOG
-
-echo "Stage 4 completed" > $LOCK_FILE; /scripts/elevate-cpanel --start --non-interactive --no-leapp
+  echo "Installing Liquid Web post-leapp script..." | tee -a $LOG 
+  bash <(curl -s https://files.liquidweb.com/support/elevate-scripts/install_post_leapp.sh) | tee -a $LOG
+  echo "Stage 4 completed" > $LOCK_FILE; /scripts/elevate-cpanel --start --non-interactive --no-leapp
 
 elif [[ "$(cat $LOCK_FILE)" == "Stage 4 completed" ]]
 then
   sleep 150
   stage_5
 else
-echo "Stage 4 should not be running yet" >> $LOG
-echo "Exiting" >> $LOG
+echo "Stage 4 should not be running yet" | tee -a $LOG
+echo "Exiting" | tee -a $LOG
 exit 1
 fi
 
