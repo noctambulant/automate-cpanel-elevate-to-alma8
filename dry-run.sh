@@ -69,7 +69,6 @@ stage_1()
     echo -e "Setting up Vaulted CentOS7 Repo"
     wget -O /etc/yum.repos.d/CentOS-Base.repo https://files.liquidweb.com/support/elevate-scripts/CentOS-Base.repo
     yum clean all && yum makecache
-    yum clean all
 #Disable Exim
     echo -e "Disabling Exim...\n" | tee -a $LOG
     whmapi1 configureservice service=exim enabled=0 monitored=0 | tee -a $LOG 
