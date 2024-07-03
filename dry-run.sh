@@ -63,7 +63,7 @@ stage_1()
 {
 #Adjusting CentOS repositories to use https://vault.centos.org:
   rm /etc/yum.repos.d/yum.system.repo || rm /etc/yum.repos.d/system.repo
-  cat << EOF > /etc/yum.repos.d/yum.system.repo
+  cat <<EOF > /etc/yum.repos.d/yum.system.repo
   [base]
   name=CentOS-$releasever - Base
   baseurl=https://vault.centos.org/7.9.2009/os/$basearch
@@ -92,7 +92,7 @@ stage_1()
   enabled=0
   gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 EOF
-   yum clean all
+    yum clean all
 #Disable Exim
     echo -e "Disabling Exim...\n" | tee -a $LOG
     whmapi1 configureservice service=exim enabled=0 monitored=0 | tee -a $LOG 
